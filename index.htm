@@ -1,0 +1,438 @@
+<html>
+	<head>
+		<title> ASH - Car Parking </title>
+		<script>
+			var parkingLotDetails;
+			var carColors = ["Black", "White", "Blue", "Red"];
+			var engAlphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+			
+			function init() { debugger;
+				//document.getElementById("container").style.height = window.innerHeight * 0.9;
+				document.getElementById("image").style.height = window.innerHeight * 0.1;
+				document.getElementById("image").style.width = window.innerWidth * 0.8;
+				
+				document.getElementById("headerButtons").style.height = window.innerHeight * 0.1;
+				document.getElementById("headerButtons").style.width = window.innerWidth * 0.8;
+				
+				document.getElementById("mainFrame").style.height = window.innerHeight * 0.6;
+				document.getElementById("mainFrame").style.width = window.innerWidth * 0.8;
+				
+				document.getElementById("reset").style.display = "none";
+				document.getElementById("mainFrame").style.display = "none";
+			}
+			
+			function startSystem() {
+				var retValue = true;
+				
+				var noOfParkingSpaces = Number(prompt("Total no. of parking spacess", ""));
+				var noOfParkedCars = Number(prompt("Total no. of parked cars in spaces", ""));
+				
+				if(isNotNullAndNotEmpty(noOfParkingSpaces) && isNotNullAndNotEmpty(noOfParkedCars)) {
+					if(isNaN(noOfParkingSpaces) || noOfParkingSpaces == 0 || isNaN(noOfParkedCars) || noOfParkingSpaces < noOfParkedCars) {
+						alert("Please enter proper numerical values and try again");
+						return false;
+					}
+					
+					parkingLotDetails = {_noOfParkingSpaces: noOfParkingSpaces,
+										 _spaces: new Array()};
+					parkingLotDetails._spaces.length = parkingLotDetails._noOfParkingSpaces;
+					retValue = initRandomParking(noOfParkedCars);
+					loadMainFrame();
+				} else {
+					retValue = false;
+				}
+				
+				return retValue;
+			}
+			
+			function initRandomParking(noOfParkedCars) {
+				while(noOfParkedCars != 0) {
+					var pSlotNo = 0;
+					while(true) {
+						pSlotNo = genRandomNo(1, parkingLotDetails._noOfParkingSpaces+1);
+						if(parkingLotDetails._spaces[pSlotNo - 1] == null) {
+							break;
+						}
+					}
+					var carRegNo = "KA-" + genRandomNo(10, 99).toString() + "-" + pickRandomElem(engAlphs) + pickRandomElem(engAlphs) + "-" + genRandomNo(1000, 9999).toString();
+					var cColor = pickRandomElem(carColors);
+					
+					var ret = parkCar(pSlotNo, carRegNo, cColor);
+					if(!ret) {
+						parkingLotDetails = null;
+						return false;
+					}
+					--noOfParkedCars;
+				}
+				return true;
+			}
+			
+			function parkCar(pSlotNo, cRegNo, cColor) {
+				if(parkingLotDetails._spaces[pSlotNo-1] == null) {
+					var carInSlot;
+					carInSlot = {_pSlotNo: pSlotNo,
+							 _cRegNo: cRegNo,
+							 _cColor: cColor};
+					
+					parkingLotDetails._spaces[pSlotNo-1] = carInSlot;
+					return true;
+				} else {
+					alert("Parking space is not empty");
+					return false;
+				}
+			}
+			
+			function isNotNullAndNotEmpty(str) {
+				return (typeof str != "undefined" && str != null && str != "");
+			}
+			
+			function genRandomNo(min, max) {
+				return (Math.floor(Math.random() * (max - min)) + min);
+			}
+			
+			function pickRandomElem(elemSet) {
+				return elemSet[Math.floor(Math.random() * elemSet.length)];
+			}
+			
+			function loadMainFrame(){
+				document.getElementById("reset").style.display = "block";
+				document.getElementById("start").style.display = "none";
+				document.getElementById("mainFrame").style.display = "block";
+				
+				mainFrameInit();
+			}
+			
+			function resetSystem() {
+				if(confirm("All data in the system will be lost. Do you wish to continue resetting ?")) {
+					parkingLotDetails = null;
+					
+					document.getElementById("start").style.display = "block";
+					document.getElementById("reset").style.display = "none";
+					document.getElementById("mainFrame").style.display = "none";
+					
+					return true;
+				} else {
+					return false;
+				}
+			}
+			
+			function closeApp() {
+				if(confirm("All data in the system will be lost. Do you wish to close the application ?")) {
+					var newWin = window.open("about:blank", "_self");
+					newWin.document.write("<div align='center'> See you soon :-) </div>");
+				} else {
+					return false;
+				}
+			}
+		</script>
+		
+		<script>
+			function mainFrameInit() {
+				if(typeof parkingLotDetails != "undefined" && parkingLotDetails != null) {
+					document.getElementById("newCarDiv").style.display = "block";
+					document.getElementById("newCarDiv").style.height = window.innerHeight * 0.9;
+					document.getElementById("newCarDiv").style.width = window.innerWidth * 0.8;
+					document.getElementById("rmvCarDiv").style.display = "none";
+					document.getElementById("allCarDiv").style.display = "none";
+					document.getElementById("carSearchDiv").style.display = "none";
+				} else {
+					document.write("Oops! Something went wrong in starting the system.\nPlease try again.");
+				}
+			}
+			
+			function parkNewCar() {
+				regNo = document.forms["newCarDetails"]["regNo"].value;
+				color = document.forms["newCarDetails"]["clr"].value;
+				
+				var regNoRE = /^[A-Z]{2}-[0-9]{2}-[A-Z]?[A-Z]-[0-9]{4}$/;
+				if(!regNo.match(regNoRE)){
+					alert("Enter the correct Registration number.\nNote: Capital letters and '-' is must");
+					return false;
+				}
+				var pSlotNo = getNextOpenSpace();
+				if(pSlotNo != 0) {
+					parkCar(pSlotNo, regNo, color);
+					alert("Have your car parked at slot number " + pSlotNo + ".");
+					return true;
+				} else {
+					alert("Sorry Parking full");
+					return false;
+				}
+								
+				//validations pending {return false}
+				
+			}
+			
+			function getNextOpenSpace() {
+				var retSlotVal = 0;
+				for(i = 0; i < parkingLotDetails._noOfParkingSpaces; ++i) {
+					if(parkingLotDetails._spaces[i] == null) {
+						retSlotVal = i + 1;
+						break;
+					}
+				}
+				return retSlotVal;
+			}
+			
+			function removeCar() {
+				var pSlotToEmpty = prompt("Enter the slot number", "");
+				if(Number(pSlotToEmpty) == 0 && Number(pSlotToEmpty) > parkingLotDetails._noOfParkingSpaces){
+					alert("Enter proper slot no");
+					return false;
+				} else{
+					if(Number(pSlotToEmpty) <= parkingLotDetails._noOfParkingSpaces) {
+						var retValue = true;
+						var carToRemove = parkingLotDetails._spaces[Number(pSlotToEmpty)-1];
+					
+						if(typeof carToRemove == "undefined" || carToRemove == null) {
+							alert("Slot already empty...");
+							return false;
+						} else if(confirm("Confirm the Car details ->\nCar Reg. No. = " + carToRemove._cRegNo + "\nColor of the car = " + carToRemove._cColor)) {
+							parkingLotDetails._spaces[Number(pSlotToEmpty)-1] = null;
+							alert("Succesfully removed");
+							return true;
+						}
+						retValue = false;
+					} else {
+					alert("Incorrect slot number.\nPlease try again with correct slot number.");
+					retValue = false;
+					}
+				return retValue;
+				}
+			}
+			
+			function dispCars(carsArray, tBodyNameToAppend, displayEdit) { debugger;
+				if(displayEdit) {
+					document.getElementById("newCarDiv").style.display = "none";
+					document.getElementById("rmvCarDiv").style.display = "none";
+					document.getElementById("allCarDiv").style.display = "block";
+					document.getElementById("allCarDiv").style.height = window.innerHeight * 0.9;
+					document.getElementById("allCarDiv").style.width = window.innerWidth * 0.8;
+					document.getElementById("carSearchDiv").style.display = "none";
+				}
+				
+				var tBodyToAppend = document.getElementById(tBodyNameToAppend);
+				tBodyToAppend.innerHTML = "";
+				for(i = 0; i < carsArray.length; ++i) {
+					var carParked = carsArray[i];
+					if(isNotNullAndNotEmpty(carParked)) {
+						tBodyToAppend.innerHTML += "<tr id='pSlot" + i + "' style='border: 1px solid black'> <td style='text-align: center; padding: 10; border: 1px solid black'> " + carParked._pSlotNo + " </td> <td style='text-align: center; padding: 10; border: 1px solid black'> " + carParked._cRegNo + " </td> <td style='text-align: center; padding: 10; border: 1px solid black'> " + carParked._cColor + " </td> <td style='text-align: center; padding: 10; border: 1px solid black'> <input type='button' value='Remove' onclick='return removeCarFromTable(" + i + ")' /> </td> </tr>";
+					} else {
+						tBodyToAppend.innerHTML += "<tr style='border: 1px solid black'> <td style='text-align: center; padding: 10; border: 1px solid black'> " + (i+1) + " </td> <td colspan='3' style='text-align: center; padding: 10; border: 1px solid black'> Open </td> </tr>";
+					}
+				}
+				
+				return true;
+			}
+			
+			function removeCarFromTable(pSlotNo) {
+				if(typeof parkingLotDetails != "undefined" && parkingLotDetails != null) {
+					parkingLotDetails._spaces[pSlotNo] = null;
+					document.getElementById("pSlot" + pSlotNo).innerHTML = "<td style='text-align: center; padding: 10; border: 1px solid black'> " + (Number(pSlotNo)+1) + " </td> <td colspan='3' style='text-align: center; padding: 10; border: 1px solid black'> Open </td>";
+					return true;
+				} else {
+					return false;
+				}
+			}
+		</script>
+		
+		<script>
+			function searchCarPage(){ debugger;
+				document.getElementById("newCarDiv").style.display = "none";
+				document.getElementById("rmvCarDiv").style.display = "none";
+				document.getElementById("allCarDiv").style.display = "none";
+				document.getElementById("carSearchDiv").style.display = "block";
+				document.getElementById("carSearchDiv").style.height = window.innerHeight * 0.9;
+				document.getElementById("carSearchDiv").style.width = window.innerWidth * 0.8;
+				
+				document.getElementById("colSearchDiv").style.display = "none";
+				hideElem('searchClr', 'searchRegNo');
+				
+				return true;
+			}
+			
+			function hideElem(showElem, hideElement) {
+				document.getElementById(showElem).style.display = "block";
+				
+				document.getElementById(hideElement).value = '';
+				document.getElementById(hideElement).style.display = "none";
+				
+				document.getElementById("colSearchDiv").style.display = "none";
+			}
+			
+			function searchSel(){ debugger;
+				var searchSelectedOption = document.forms["carSearch"]["searchOption"].value;
+				var retCarsArr = new Array();
+				
+				if("color" == searchSelectedOption) {
+					var selectedColor = document.forms["carSearch"]["searchClr"].value;
+					if(!isNotNullAndNotEmpty(selectedColor)) {
+						alert("Select a color");
+						return false;
+					}
+					retCarsArr = searchCar(parkingLotDetails._spaces, "_cColor", selectedColor, 0);
+				} else if("regNo" == searchSelectedOption) {
+					var selectedRegNo = document.forms["carSearch"]["searchRegNo"].value;
+					var regNoRE = /^[A-Z]{2}-[0-9]{2}-[A-Z]?[A-Z]-[0-9]{4}$/;
+					if(!selectedRegNo.match(regNoRE)){
+						alert("Enter the correct Registration number.\nNote: Capital letters and '-' is must");
+						return false;
+					}
+					if(!isNotNullAndNotEmpty(selectedRegNo)) {
+						alert("Enter a correct registration number.");
+						return false;
+					}
+					retCarsArr = searchCar(parkingLotDetails._spaces, "_cRegNo", selectedRegNo, 1);
+				}
+				
+				dispCars(retCarsArr, 'searchCarTbody', false);
+				document.getElementById("colSearchDiv").style.display = "block";
+				return true;
+			}
+						
+			function searchCar(inCarsArray, propName, propValue, noOfMatches){ debugger;
+				var retCarsArray = new Array();
+				
+				for(i = 0; i < inCarsArray.length; ++i) {
+					if(isNotNullAndNotEmpty(inCarsArray[i]) && isNotNullAndNotEmpty(inCarsArray[i][propName]) && inCarsArray[i][propName] == propValue) {
+						retCarsArray.push(inCarsArray[i]);
+						if(0 != noOfMatches && retCarsArray.length == noOfMatches) {
+							break;
+						}
+					}
+				}
+				
+				return retCarsArray;
+			}
+		</script>
+	</head>
+	<body onload="init()">
+		<div id="container" align="center">
+			<div id="image" style="float:top">
+				<h1 align="center"> ASH - Car Parking </h1>
+			</div>
+			<div id="headerButtons" style="float:top">
+				<table border="0">
+					<tr>
+						<td> <input type="button" id="start" value="Start" onClick="return startSystem()" /> </td>
+						<td> <input type="button" id="reset" value="Reset" onClick="return resetSystem()" /> </td>
+						<td> <input type="button" id="close" value="Close App" onClick="return closeApp()" /> </td>
+					</tr>
+				</table>
+			</div>
+			<div id="mainFrame" style="float:top">
+				<table style="border:0">
+					<tr>
+						<td style="padding:50" onclick="return mainFrameInit()"> Entry </td>
+						<td style="padding:50" onclick="return removeCar()"> Exit </td>
+						<td style="padding:50" onclick="return dispCars(parkingLotDetails._spaces, 'allCarTbody', true)"> Parking Space map </td>
+						<td style="padding:50" onclick="return searchCarPage()"> Search </td>
+					</tr>
+				</table>
+				
+				<div id="newCarDiv">
+					<form name="newCarDetails">
+						<table>
+							<tr>
+								<th colspan="3">
+									Enter the details of Car
+								</th>
+							</tr>
+							<tr>
+								<td> Registration No. </td>
+								<td> : </td>
+								<td> <input type="text" name="regNo" value="" required> </td>
+							</tr>
+							<tr>
+								<td> Color of Car </td>
+								<td> : </td>
+								<td>
+									<select name="clr" value="Select" required>
+										<option> Black </option>
+										<option> White </option>
+										<option> Blue </option>
+										<option> Red </option>
+									</select>
+								</td>
+							</tr>
+							<tr colspan="3">
+								<td>
+									<input type="button" onclick="return parkNewCar()" value="Park">
+								</td>
+							</tr>
+						</table>
+					</form>
+				</div>
+				
+				<div id="rmvCarDiv">
+				</div>
+				
+				<div id="allCarDiv">
+					<table id="allCarTable" style="border: 1px solid black">
+						<thead id="allCarThead" style='border: 1px solid black'>
+							<th style='text-align: center; padding: 20; border: 1px solid black'> Slot No. </th>
+							<th style='text-align: center; padding: 20; border: 1px solid black'> Reg. No. </th>
+							<th style='text-align: center; padding: 20; border: 1px solid black'> Color </th>
+							<th style='text-align: center; padding: 20; border: 1px solid black'> Remove </th>
+						</thead>
+						<tbody id="allCarTbody">
+						</tbody>
+					</table>
+				</div>
+				
+				<div id="carSearchDiv">
+					<form name="carSearch">
+						<table border="0">
+							<tr>
+								<th colspan="2" align="center">
+									Select your choice to search
+								</th>
+							</tr>
+							<tr>
+								<td>
+									<label for="chClr">Color</label>
+									<input type="radio" name="searchOption" id="defRadioSel" value="color" onclick="hideElem('searchClr', 'searchRegNo')" checked />
+								</td>
+								<td>
+									<label for="chRegNo">Registration no</label>
+									<input type="radio" name="searchOption" value="regNo" onclick="hideElem('searchRegNo', 'searchClr')" />
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<select id="searchClr" name="searchClr" value="">
+										<option> Black </option>
+										<option> White </option>
+										<option> Blue </option>
+										<option> Red </option>
+									</select>
+								</td>
+								<td>
+									<input type="text" id="searchRegNo" name="searchRegNo" value="" />
+								</td>
+							</tr>
+							<tr>
+								<td colspan="2" align="center">
+									<input type="button" onClick="return searchSel()" value="Submit" />
+								</td>
+							</tr>
+						</table>
+					</form>
+					<br />
+					<div id="colSearchDiv">
+						<table id="colSearchCarTable" style="border: 1px solid black">
+							<thead id="colSearchCarThead" style='border: 1px solid black'>
+								<th style='text-align: center; padding: 20; border: 1px solid black'> Slot No. </th>
+								<th style='text-align: center; padding: 20; border: 1px solid black'> Reg. No. </th>
+								<th style='text-align: center; padding: 20; border: 1px solid black'> Color </th>
+								<th style='text-align: center; padding: 20; border: 1px solid black'> Remove </th>
+							</thead>
+							<tbody id="searchCarTbody">
+							</tbody>
+						</table>
+				</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
